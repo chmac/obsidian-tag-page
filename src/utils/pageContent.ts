@@ -2,6 +2,8 @@ import { App, MarkdownView } from 'obsidian';
 import { PluginSettings, TagInfo } from '../types';
 import { getIsWildCard } from './tagSearch';
 
+const ENABLE_NEW_TAG_PAGE_FORMAT = true;
+
 /**
  * Type definition for a function that generates content for a tag page.
  *
@@ -37,7 +39,7 @@ export const generateTagPageContent: GenerateTagPageContentFn = async (
 	// Generate list of links to files with this tag
 	const tagPageContent: string[] = [];
 	tagPageContent.push(
-		`---\n${settings.frontmatterQueryProperty}: "${tagOfInterest}"\n---`,
+		`---\n${settings.frontmatterQueryProperty}: "${tagOfInterest}"\n---\n`,
 	);
 	// Resolve the title and push to the page content
 	tagPageContent.push(resolveTagPageTitle(settings, tagOfInterest));
@@ -129,12 +131,16 @@ function processTagMatch(
 	fileLink: string,
 	tagPageContent: string[],
 ) {
-	if (fullTag.trim().startsWith('-')) {
-		const [firstBullet, ...bullets] = fullTag.split('\n');
-		const firstBulletWithLink = `${firstBullet} ${fileLink}`;
-		tagPageContent.push([firstBulletWithLink, ...bullets].join('\n'));
+	if (ENABLE_NEW_TAG_PAGE_FORMAT) {
+		tagPageContent.push(`\n---\n\n${fileLink}\n${fullTag}`);
 	} else {
-		tagPageContent.push(`- ${fullTag} ${fileLink}`);
+		if (fullTag.trim().startsWith('-')) {
+			const [firstBullet, ...bullets] = fullTag.split('\n');
+			const firstBulletWithLink = `${firstBullet} ${fileLink}`;
+			tagPageContent.push([firstBulletWithLink, ...bullets].join('\n'));
+		} else {
+			tagPageContent.push(`- ${fullTag} ${fileLink}`);
+		}
 	}
 }
 
@@ -199,7 +205,7 @@ export const generateFilename = (
 };
 
 /**
- * Resolves the title of the tag page according to the defined template in the settings. 
+ * Resolves the title of the tag page according to the defined template in the settings.
  * If empty, the default title will be generated. The template variable {{tag}} will be replaced by the full tag, and {{tagname}} will be replaced just with the tag name. {{lf}} will create new lines.
  * @param {PluginSettings} settings - The plugin settings.
  * @param {string} tagOfInterest - The tag for which the page is being generated.
@@ -214,7 +220,14 @@ export const resolveTagPageTitle = (
 		return `## Tag Content for ${tagOfInterest.replace('*', '')}`;
 	} else {
 		const tag = `${tagOfInterest.replace('*', '')}`;
-		const tagName = `${tagOfInterest.replace('*', '')}`.replace('#','');
-		return  '## ' + template.replaceAll('{{lf}}','\n').replaceAll('{{tag}}', ' ' + tag).replaceAll('{{tagname}}', tagName).replaceAll('  ', ' ');
+		const tagName = `${tagOfInterest.replace('*', '')}`.replace('#', '');
+		return (
+			'## ' +
+			template
+				.replaceAll('{{lf}}', '\n')
+				.replaceAll('{{tag}}', ' ' + tag)
+				.replaceAll('{{tagname}}', tagName)
+				.replaceAll('  ', ' ')
+		);
 	}
-}
+};
