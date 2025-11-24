@@ -1,8 +1,9 @@
-import { App, MarkdownView } from 'obsidian';
+import { App, MarkdownView, getFrontMatterInfo } from 'obsidian';
 import { PluginSettings, TagInfo } from '../types';
 import { getIsWildCard } from './tagSearch';
 
 const ENABLE_NEW_TAG_PAGE_FORMAT = true;
+const ENABLE_LEAVE_EXISTING_FRONTMATTER = true;
 
 /**
  * Type definition for a function that generates content for a tag page.
@@ -38,9 +39,27 @@ export const generateTagPageContent: GenerateTagPageContentFn = async (
 ): Promise<string> => {
 	// Generate list of links to files with this tag
 	const tagPageContent: string[] = [];
-	tagPageContent.push(
-		`---\n${settings.frontmatterQueryProperty}: "${tagOfInterest}"\n---\n`,
-	);
+	// TODO There is probably a cleaner way to get the frontmatter here
+	if (ENABLE_LEAVE_EXISTING_FRONTMATTER) {
+		const activeLeaf = app.workspace.getActiveViewOfType(MarkdownView);
+		if (activeLeaf !== null && activeLeaf.file !== null) {
+			const currentFileContent = activeLeaf.currentMode.get();
+			const { frontmatter } = getFrontMatterInfo(currentFileContent);
+			// NOTE: `frontmatter` has a trailing newline
+			tagPageContent.push(`---\n${frontmatter}---`);
+		} else {
+			// NOTE: We can reach this point if auto refresh is on, and a tag page was
+			// open when Obisidan restarts. Then the `refreshTagPageContent()` gets
+			// triggered, but by the time this function is run, the Obsidian tab has
+			// been closed. In that case, whatever we return here will be ignored.
+			return '';
+		}
+	} else {
+		tagPageContent.push(
+			`---\n${settings.frontmatterQueryProperty}: "${tagOfInterest}"\n---\n`,
+		);
+	}
+
 	// Resolve the title and push to the page content
 	tagPageContent.push(resolveTagPageTitle(settings, tagOfInterest));
 
