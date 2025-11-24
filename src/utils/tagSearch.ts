@@ -2,6 +2,8 @@ import { App, TFile, Vault } from 'obsidian';
 import { PluginSettings, SortOrder, TagInfo } from '../types';
 import { isTagPage } from './obsidianApi';
 
+const ENALBE_SORT_BY_NAME_DESCENDING = true;
+
 /**
  * Determines if the given tag contains a wildcard (`/*`) at the end and returns the cleaned tag.
  *
@@ -323,8 +325,13 @@ export const fetchTagData = async (
 				const existingDetails = consolidatedTagInfo.get(tag) || [];
 				const combinedDetails = existingDetails.concat(details);
 
+				if (ENALBE_SORT_BY_NAME_DESCENDING) {
+					combinedDetails.sort((a, b) =>
+						b.fileLink.localeCompare(a.fileLink),
+					);
+				}
 				// Sort by timestamp
-				if (settings.sortByDate === SortOrder.DESC) {
+				else if (settings.sortByDate === SortOrder.DESC) {
 					combinedDetails.sort((a, b) => b.timestamp - a.timestamp);
 				} else {
 					combinedDetails.sort((a, b) => a.timestamp - b.timestamp);
