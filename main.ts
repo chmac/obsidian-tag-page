@@ -129,10 +129,17 @@ export default class TagPagePlugin extends Plugin {
 		);
 		if (!tagOfInterest) return;
 
+		const folderToFilterFor = extractFrontMatterTagValue(
+			this.app,
+			activeLeaf,
+			'tag-page-folder',
+		);
+
 		const tagsInfo = await fetchTagData(
 			this.app,
 			this.settings,
 			tagOfInterest,
+			folderToFilterFor,
 		);
 
 		const tagPageContentString = await generateTagPageContent(
@@ -321,7 +328,7 @@ class TagPageSettingTab extends PluginSettingTab {
 		new Setting(containerEl)
 			.setName('Tag page title template')
 			.setDesc(
-				'Title template for the tag page. The placeholder \'{{tag}}\' will be replaced by the actual tag. The placeholder \'{{tagname}}\' will be replaced by just the tag name (without the \'#\' symbol and without a link). The placeholder \'{{lf}}\' (line feed) is used to add new lines for optional spacing or to insert static text between the title and the tags.'
+				"Title template for the tag page. The placeholder '{{tag}}' will be replaced by the actual tag. The placeholder '{{tagname}}' will be replaced by just the tag name (without the '#' symbol and without a link). The placeholder '{{lf}}' (line feed) is used to add new lines for optional spacing or to insert static text between the title and the tags.",
 			)
 			.addText((text) =>
 				text
@@ -329,7 +336,7 @@ class TagPageSettingTab extends PluginSettingTab {
 					.onChange(async (value) => {
 						this.plugin.settings.tagPageTitleTemplate = value;
 						await this.plugin.saveSettings();
-					})
+					}),
 			);
 		new Setting(containerEl)
 			.setName('Include lines')

@@ -305,16 +305,24 @@ export const fetchTagData = async (
 	app: App,
 	settings: PluginSettings,
 	tagOfInterest: string,
+	folderToFilterFor?: string,
 ): Promise<TagInfo> => {
 	// Search for all pages with this tag
 	const vault = app.vault;
 	const allFiles = vault.getMarkdownFiles();
 	return await Promise.all(
 		allFiles
-			.filter(
-				(file) =>
-					!isTagPage(app, settings.frontmatterQueryProperty, file),
-			)
+			.filter((file) => {
+				if (
+					typeof folderToFilterFor !== 'undefined' &&
+					folderToFilterFor !== null &&
+					folderToFilterFor.length > 0 &&
+					!file.path.startsWith(folderToFilterFor)
+				) {
+					return false;
+				}
+				return !isTagPage(app, settings.frontmatterQueryProperty, file);
+			})
 			.map((file) => processFile(vault, settings, file, tagOfInterest)),
 	).then((tagInfos) => {
 		const consolidatedTagInfo: TagInfo = new Map();
