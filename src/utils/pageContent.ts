@@ -4,6 +4,8 @@ import { getIsWildCard } from './tagSearch';
 
 const ENABLE_NEW_TAG_PAGE_FORMAT = true;
 const ENABLE_LEAVE_EXISTING_FRONTMATTER = true;
+const ENABLE_LEAVE_EXISTING_CONTENT = true;
+const TAG_PAGE_CONTENT_MARKER = '<!-- tag-page-content -->';
 
 /**
  * Type definition for a function that generates content for a tag page.
@@ -58,6 +60,32 @@ export const generateTagPageContent: GenerateTagPageContentFn = async (
 		tagPageContent.push(
 			`---\n${settings.frontmatterQueryProperty}: "${tagOfInterest}"\n---\n`,
 		);
+	}
+
+	if (ENABLE_LEAVE_EXISTING_CONTENT) {
+		const activeLeaf = app.workspace.getActiveViewOfType(MarkdownView);
+		if (activeLeaf !== null && activeLeaf.file !== null) {
+			const currentFileContent = activeLeaf.currentMode.get();
+			const { contentStart } = getFrontMatterInfo(currentFileContent);
+			const contentMinusFrontmatter =
+				currentFileContent.substring(contentStart);
+			const positionOfTagPageContent = contentMinusFrontmatter.indexOf(
+				TAG_PAGE_CONTENT_MARKER,
+			);
+			if (positionOfTagPageContent > 0) {
+				const contentToKeep = contentMinusFrontmatter.substring(
+					0,
+					positionOfTagPageContent + TAG_PAGE_CONTENT_MARKER.length,
+				);
+				tagPageContent.push(`${contentToKeep}\n`);
+			}
+		} else {
+			// NOTE: We can reach this point if auto refresh is on, and a tag page was
+			// open when Obisidan restarts. Then the `refreshTagPageContent()` gets
+			// triggered, but by the time this function is run, the Obsidian tab has
+			// been closed. In that case, whatever we return here will be ignored.
+			return '';
+		}
 	}
 
 	// Resolve the title and push to the page content
