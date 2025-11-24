@@ -151,7 +151,14 @@ function processTagMatch(
 	tagPageContent: string[],
 ) {
 	if (ENABLE_NEW_TAG_PAGE_FORMAT) {
-		tagPageContent.push(`\n---\n\n${fileLink}\n${fullTag}`);
+		// NOTE: `fullTag` might not actually contain the tag, if a parent and child
+		// bullet point are included, then both the parent and child will exist
+		// separately in the array
+		if (fullTag.startsWith(' ') || fullTag.startsWith('\t')) {
+			tagPageContent.push(fullTag);
+		} else {
+			tagPageContent.push(`\n---\n\n${fileLink}\n${fullTag}`);
+		}
 	} else {
 		if (fullTag.trim().startsWith('-')) {
 			const [firstBullet, ...bullets] = fullTag.split('\n');
