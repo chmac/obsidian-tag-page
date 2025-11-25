@@ -318,8 +318,6 @@ function getListItemAndChildren(
 	}
 	const { listItems } = metadata;
 
-	debugger;
-
 	const matchingListItemIndex = listItems.findIndex(
 		(listItem) =>
 			listItem.position.start.line === tagCache.position.start.line,
