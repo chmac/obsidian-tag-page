@@ -482,7 +482,6 @@ export const fetchTagData = async (
 
 			// TODO Only return each match at most once
 			const newMatches = matchingTags.map((tagCache) => {
-				// TODO Also return parent bullet points here
 				const matchingTaskString = getListItemAndChildrenAndParents(
 					fileLines,
 					tagCache,
