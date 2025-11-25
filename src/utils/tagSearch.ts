@@ -310,7 +310,7 @@ type FileWithMetadata = {
 };
 
 function getLinesForPosition(fileLines: string[], position: Pos) {
-	const lines = fileLines.slice(position.start.line, position.end.line);
+	const lines = fileLines.slice(position.start.line, position.end.line + 1);
 	const linesString = lines.join('\n');
 	return linesString;
 }
