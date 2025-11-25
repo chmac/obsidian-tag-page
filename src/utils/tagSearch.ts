@@ -407,6 +407,7 @@ export const fetchTagData = async (
 	tagOfInterest: string,
 	folderToFilterFor?: string,
 ): Promise<TagInfo> => {
+	console.log('#DyCNH7 fetchTagData', tagOfInterest);
 	const { isWildCard, cleanedTag } = getIsWildCard(tagOfInterest);
 
 	// Search for all pages with this tag
@@ -424,6 +425,15 @@ export const fetchTagData = async (
 			metadata: CachedMetadata | null;
 		}): record is FileWithMetadata {
 			const { metadata } = record;
+
+			// NOTE: Hack around `isTagPage()` because we already have the data
+			if (
+				typeof metadata?.frontmatter?.[
+					settings.frontmatterQueryProperty
+				] !== 'undefined'
+			) {
+				return false;
+			}
 
 			if (metadata === null || typeof metadata.tags === 'undefined') {
 				return false;
@@ -484,7 +494,7 @@ export const fetchTagData = async (
 
 	const flatResults = results.flatMap((child) => child);
 
-	const output = new Map();
+	const output: TagInfo = new Map();
 	output.set(tagOfInterest, flatResults);
 
 	return output;
