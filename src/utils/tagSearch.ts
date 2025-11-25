@@ -407,7 +407,6 @@ export const fetchTagData = async (
 	tagOfInterest: string,
 	folderToFilterFor?: string,
 ): Promise<TagInfo> => {
-	console.log('#DyCNH7 fetchTagData', tagOfInterest);
 	const { isWildCard, cleanedTag } = getIsWildCard(tagOfInterest);
 
 	// Search for all pages with this tag
