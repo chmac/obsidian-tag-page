@@ -1,5 +1,5 @@
-import { App, TFile, Vault } from 'obsidian';
-import { PluginSettings, SortOrder, TagInfo } from '../types';
+import { App, CachedMetadata, TagCache, TFile, Vault } from 'obsidian';
+import { PluginSettings, SortOrder, TagInfo, TagMatchDetail } from '../types';
 import { isTagPage } from './obsidianApi';
 
 const ENABLE_SORT_BY_NAME_DESCENDING = true;
@@ -46,7 +46,10 @@ export const containsTag = (stringToSearch: string, tag: string): boolean => {
 		return lowerStringToSearch.includes(lowerCleanedTag);
 	} else {
 		// Use 'i' flag in RegExp for case-insensitive matching
-		const regex = new RegExp(`${lowerCleanedTag}\\s`, 'gi');
+		const regex = new RegExp(
+			`(^|[ \t])(${lowerCleanedTag})[^a-zA-Z/_-]`,
+			'gi',
+		);
 		return regex.test(lowerStringToSearch);
 	}
 };
@@ -293,6 +296,11 @@ export const processFile = async (
 	}
 };
 
+type FileWithMetadata = {
+	file: TFile;
+	metadata: CachedMetadata & { tags: NonNullable<CachedMetadata['tags']> };
+};
+
 /**
  * Fetches data for a specific tag across all files in a vault.
  *
@@ -307,11 +315,89 @@ export const fetchTagData = async (
 	tagOfInterest: string,
 	folderToFilterFor?: string,
 ): Promise<TagInfo> => {
+	console.log('#emDucf fetchTagData()', tagOfInterest);
+
+	const { isWildCard, cleanedTag } = getIsWildCard(tagOfInterest);
+
 	// Search for all pages with this tag
 	const vault = app.vault;
 	const allFiles = vault.getMarkdownFiles();
+
+	const filesCachedMetadata = allFiles.map((file) => ({
+		file,
+		metadata: app.metadataCache.getFileCache(file),
+	}));
+
+	const filesWithMatchingTags = filesCachedMetadata.filter(
+		function hasTag(record: {
+			file: TFile;
+			metadata: CachedMetadata | null;
+		}): record is FileWithMetadata {
+			const { metadata } = record;
+
+			if (metadata === null || typeof metadata.tags === 'undefined') {
+				return false;
+			}
+			const hasMatchingTags = metadata.tags.some(({ tag }) =>
+				isWildCard ? tag.startsWith(cleanedTag) : tag === cleanedTag,
+			);
+			return hasMatchingTags;
+		},
+	);
+
+	const results = await Promise.all(
+		filesWithMatchingTags.map(async ({ file, metadata }) => {
+			const fileContent = await vault.cachedRead(file);
+			const fileLines = fileContent.split('\n');
+
+			const fileLink = settings.fullLinkName
+				? `[[${file.basename}]]`
+				: `[[${file.basename}|*]]`;
+
+			const fileInfo = {
+				fileLink,
+				timestamp: file.stat.ctime,
+			};
+
+			const matchingTags = metadata.tags.filter(({ tag }) =>
+				isWildCard ? tag.startsWith(cleanedTag) : tag === cleanedTag,
+			);
+
+			// TODO Only return each match at most once
+			const newMatches = matchingTags.map((tagCache) => {
+				const matchingLine = fileLines[tagCache.position.start.line];
+				const result: TagMatchDetail = {
+					...fileInfo,
+					stringContainingTag: matchingLine,
+				};
+				return result;
+			});
+			return newMatches;
+		}),
+	);
+
+	const flatResults = results.flatMap((child) => child);
+
+	const output = new Map();
+	output.set(tagOfInterest, flatResults);
+
+	return output;
+
 	return await Promise.all(
 		allFiles
+			.filter((file) => {
+				const metadata = app.metadataCache.getFileCache(file);
+				if (metadata === null || typeof metadata.tags === 'undefined') {
+					return false;
+				}
+				if (metadata.tags.some(({ tag }) => tag.includes('foo'))) {
+					console.log('#HPExu3', file, metadata);
+				}
+				const hasMatchingTag = metadata.tags.some(
+					(tagCache) => tagCache.tag === tagOfInterest,
+				);
+				return hasMatchingTag;
+			})
 			.filter((file) => {
 				if (
 					typeof folderToFilterFor !== 'undefined' &&
