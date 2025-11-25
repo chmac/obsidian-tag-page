@@ -423,7 +423,24 @@ export const fetchTagData = async (
 			file: TFile;
 			metadata: CachedMetadata | null;
 		}): record is FileWithMetadata {
-			const { metadata } = record;
+			const { file, metadata } = record;
+
+			if (
+				typeof folderToFilterFor === 'string' &&
+				folderToFilterFor.length > 0
+			) {
+				if (
+					typeof file.parent === 'undefined' ||
+					file.parent === null
+				) {
+					return false;
+				}
+				const matchesFolder =
+					file.parent.path.startsWith(folderToFilterFor);
+				if (!matchesFolder) {
+					return false;
+				}
+			}
 
 			// NOTE: Hack around `isTagPage()` because we already have the data
 			if (
