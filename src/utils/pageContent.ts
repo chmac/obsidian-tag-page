@@ -53,7 +53,7 @@ export const generateTagPageContent: GenerateTagPageContentFn = async (
 		// Iterate through each group of tags in the sorted order
 		sortedTagsInfo.forEach(([baseTag, details]) => {
 			// Add a subheader for the baseTag
-			tagPageContent.push(`### ${baseTag}`);
+			// tagPageContent.push(`### ${baseTag}`);
 
 			// Process each tagMatch detail in this group
 			details.forEach(({ stringContainingTag, fileLink }) => {
@@ -83,7 +83,7 @@ export const generateTagPageContent: GenerateTagPageContentFn = async (
 		.map((file) => `- [[${file.basename}]]`);
 	if (filesWithFrontmatterTag.length > 0) {
 		const { cleanedTag } = getIsWildCard(tagOfInterest);
-		tagPageContent.push(`## Files with ${cleanedTag} in frontmatter`);
+		// tagPageContent.push(`## Files with ${cleanedTag} in frontmatter`);
 		tagPageContent.push(...filesWithFrontmatterTag);
 	}
 	return tagPageContent.join('\n');
@@ -209,6 +209,7 @@ export const resolveTagPageTitle = (
 	settings: PluginSettings,
 	tagOfInterest: string,
 ): string => {
+	return '';
 	const template = settings.tagPageTitleTemplate;
 	if (!template) {
 		return `## Tag Content for ${tagOfInterest.replace('*', '')}`;
