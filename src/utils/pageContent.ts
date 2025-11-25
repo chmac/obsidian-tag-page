@@ -102,7 +102,7 @@ export const generateTagPageContent: GenerateTagPageContentFn = async (
 		// Iterate through each group of tags in the sorted order
 		sortedTagsInfo.forEach(([baseTag, details]) => {
 			// Add a subheader for the baseTag
-			tagPageContent.push(`### ${baseTag}`);
+			tagPageContent.push(`\n### ${baseTag}`);
 
 			// Process each tagMatch detail in this group
 			details.forEach(({ stringContainingTag, fileLink }) => {
@@ -132,7 +132,7 @@ export const generateTagPageContent: GenerateTagPageContentFn = async (
 		.map((file) => `- [[${file.basename}]]`);
 	if (filesWithFrontmatterTag.length > 0) {
 		const { cleanedTag } = getIsWildCard(tagOfInterest);
-		tagPageContent.push(`## Files with ${cleanedTag} in frontmatter`);
+		tagPageContent.push(`\n## Files with ${cleanedTag} in frontmatter\n`);
 		tagPageContent.push(...filesWithFrontmatterTag);
 	}
 	return tagPageContent.join('\n');
@@ -179,14 +179,7 @@ function processTagMatch(
 	tagPageContent: string[],
 ) {
 	if (ENABLE_NEW_TAG_PAGE_FORMAT) {
-		// NOTE: `fullTag` might not actually contain the tag, if a parent and child
-		// bullet point are included, then both the parent and child will exist
-		// separately in the array
-		if (fullTag.startsWith(' ') || fullTag.startsWith('\t')) {
-			tagPageContent.push(fullTag);
-		} else {
-			tagPageContent.push(`\n---\n\n${fileLink}\n${fullTag}`);
-		}
+		tagPageContent.push(`\n---\n\n${fileLink}\n${fullTag}`);
 	} else {
 		if (fullTag.trim().startsWith('-')) {
 			const [firstBullet, ...bullets] = fullTag.split('\n');
@@ -271,12 +264,12 @@ export const resolveTagPageTitle = (
 ): string => {
 	const template = settings.tagPageTitleTemplate;
 	if (!template) {
-		return `## Tag Content for ${tagOfInterest.replace('*', '')}`;
+		return `\n## Tag Content for ${tagOfInterest.replace('*', '')}`;
 	} else {
 		const tag = `${tagOfInterest.replace('*', '')}`;
 		const tagName = `${tagOfInterest.replace('*', '')}`.replace('#', '');
 		return (
-			'## ' +
+			'\n## ' +
 			template
 				.replaceAll('{{lf}}', '\n')
 				.replaceAll('{{tag}}', ' ' + tag)
