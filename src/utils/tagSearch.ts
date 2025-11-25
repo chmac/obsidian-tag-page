@@ -1,4 +1,4 @@
-import { App, CachedMetadata, TagCache, TFile, Vault } from 'obsidian';
+import { App, CachedMetadata, Pos, TagCache, TFile, Vault } from 'obsidian';
 import { PluginSettings, SortOrder, TagInfo, TagMatchDetail } from '../types';
 import { isTagPage } from './obsidianApi';
 
@@ -301,6 +301,57 @@ type FileWithMetadata = {
 	metadata: CachedMetadata & { tags: NonNullable<CachedMetadata['tags']> };
 };
 
+function getLinesForPosition(fileLines: string[], position: Pos) {
+	const lines = fileLines.slice(position.start.line, position.end.line);
+	const linesString = lines.join('\n');
+	return linesString;
+}
+
+function getListItemAndChildren(
+	fileLines: string[],
+	tagCache: TagCache,
+	record: FileWithMetadata,
+) {
+	const { metadata } = record;
+	if (typeof metadata.listItems === 'undefined') {
+		return;
+	}
+	const { listItems } = metadata;
+
+	debugger;
+
+	const matchingListItemIndex = listItems.findIndex(
+		(listItem) =>
+			listItem.position.start.line === tagCache.position.start.line,
+	);
+
+	if (matchingListItemIndex === -1) {
+		return;
+	}
+
+	const matchingListItem = listItems[matchingListItemIndex];
+
+	const listItemsAfterMatch = listItems.slice(matchingListItemIndex + 1);
+
+	const nextSiblingTask = listItemsAfterMatch.find(
+		(listItem) => listItem.parent === matchingListItem.parent,
+	);
+
+	if (typeof nextSiblingTask === 'undefined') {
+		const taskLinesString = getLinesForPosition(
+			fileLines,
+			matchingListItem.position,
+		);
+		return taskLinesString;
+	}
+
+	const taskLinesString = getLinesForPosition(fileLines, {
+		start: matchingListItem.position.start,
+		end: nextSiblingTask.position.end,
+	});
+	return taskLinesString;
+}
+
 /**
  * Fetches data for a specific tag across all files in a vault.
  *
@@ -344,7 +395,8 @@ export const fetchTagData = async (
 	);
 
 	const results = await Promise.all(
-		filesWithMatchingTags.map(async ({ file, metadata }) => {
+		filesWithMatchingTags.map(async (record) => {
+			const { file, metadata } = record;
 			const fileContent = await vault.cachedRead(file);
 			const fileLines = fileContent.split('\n');
 
@@ -363,7 +415,21 @@ export const fetchTagData = async (
 
 			// TODO Only return each match at most once
 			const newMatches = matchingTags.map((tagCache) => {
-				// TODO Also return child bullet points here
+				// TODO Also return parent bullet points here
+				const matchingTaskString = getListItemAndChildren(
+					fileLines,
+					tagCache,
+					record,
+				);
+
+				if (typeof matchingTaskString !== 'undefined') {
+					const result: TagMatchDetail = {
+						...fileInfo,
+						stringContainingTag: matchingTaskString,
+					};
+					return result;
+				}
+
 				const matchingLine = fileLines[tagCache.position.start.line];
 				const result: TagMatchDetail = {
 					...fileInfo,
