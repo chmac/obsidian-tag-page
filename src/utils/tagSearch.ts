@@ -1,4 +1,12 @@
-import { App, CachedMetadata, Pos, TagCache, TFile, Vault } from 'obsidian';
+import {
+	App,
+	CachedMetadata,
+	ListItemCache,
+	Pos,
+	TagCache,
+	TFile,
+	Vault,
+} from 'obsidian';
 import { PluginSettings, SortOrder, TagInfo, TagMatchDetail } from '../types';
 import { isTagPage } from './obsidianApi';
 
@@ -307,7 +315,42 @@ function getLinesForPosition(fileLines: string[], position: Pos) {
 	return linesString;
 }
 
-function getListItemAndChildren(
+function getListItemCacheIndexForRootListItem(
+	listItems: ListItemCache[],
+	tagCache: TagCache,
+) {
+	const matchingListItemIndex = listItems.findIndex(
+		(listItem) =>
+			listItem.position.start.line === tagCache.position.start.line,
+	);
+
+	// We did not find a ListItemCache with the correct `position.start.line`
+	if (matchingListItemIndex === -1) {
+		return matchingListItemIndex;
+	}
+
+	const matchingListItem = listItems[matchingListItemIndex];
+
+	// If this item has a negative parent value, then this is a root level list
+	// item, so return it's index now
+	if (matchingListItem.parent < 0) {
+		return matchingListItemIndex;
+	}
+
+	const parentTaskItemIndex = listItems.findIndex(
+		(listItem) => listItem.position.start.line === matchingListItem.parent,
+	);
+
+	// If we cannot find its parent, then something has gone wrong
+	if (parentTaskItemIndex < 0) {
+		// This should not happen
+		throw new Error('missing-task-parent');
+	}
+
+	return parentTaskItemIndex;
+}
+
+function getListItemAndChildrenAndParents(
 	fileLines: string[],
 	tagCache: TagCache,
 	record: FileWithMetadata,
@@ -318,9 +361,9 @@ function getListItemAndChildren(
 	}
 	const { listItems } = metadata;
 
-	const matchingListItemIndex = listItems.findIndex(
-		(listItem) =>
-			listItem.position.start.line === tagCache.position.start.line,
+	const matchingListItemIndex = getListItemCacheIndexForRootListItem(
+		listItems,
+		tagCache,
 	);
 
 	if (matchingListItemIndex === -1) {
@@ -414,7 +457,7 @@ export const fetchTagData = async (
 			// TODO Only return each match at most once
 			const newMatches = matchingTags.map((tagCache) => {
 				// TODO Also return parent bullet points here
-				const matchingTaskString = getListItemAndChildren(
+				const matchingTaskString = getListItemAndChildrenAndParents(
 					fileLines,
 					tagCache,
 					record,
