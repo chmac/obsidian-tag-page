@@ -135,7 +135,8 @@ export const generateTagPageContent: GenerateTagPageContentFn = async (
 		tagPageContent.push(`\n## Files with ${cleanedTag} in frontmatter\n`);
 		tagPageContent.push(...filesWithFrontmatterTag);
 	}
-	return tagPageContent.join('\n');
+	const tagPageContentString = `${tagPageContent.join('\n')}\n`;
+	return tagPageContentString;
 };
 
 /**
