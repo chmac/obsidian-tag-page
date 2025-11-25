@@ -315,8 +315,6 @@ export const fetchTagData = async (
 	tagOfInterest: string,
 	folderToFilterFor?: string,
 ): Promise<TagInfo> => {
-	console.log('#emDucf fetchTagData()', tagOfInterest);
-
 	const { isWildCard, cleanedTag } = getIsWildCard(tagOfInterest);
 
 	// Search for all pages with this tag
@@ -365,6 +363,7 @@ export const fetchTagData = async (
 
 			// TODO Only return each match at most once
 			const newMatches = matchingTags.map((tagCache) => {
+				// TODO Also return child bullet points here
 				const matchingLine = fileLines[tagCache.position.start.line];
 				const result: TagMatchDetail = {
 					...fileInfo,
