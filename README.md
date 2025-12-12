@@ -1,5 +1,8 @@
 # Obsidian Tag Page Plugin
 
+> [!CAUTION]
+> This was a fork created to experiment with different formats. But in the end I abandoned this approach in favour of the tag-summary plugin which I also [forked](https://github.com/chmac/tag-summary). This was a work in progress and is not maintained.
+
 ## Overview
 
 The Obsidian Tag Page Plugin enables users to create and manage dedicated Markdown pages for individual tags. When you create a tag page, the plugin automatically populates it with content based on the associated tag. The plugin also provides a ribbon icon that refreshes the content of the active tag page according to the current settings.
